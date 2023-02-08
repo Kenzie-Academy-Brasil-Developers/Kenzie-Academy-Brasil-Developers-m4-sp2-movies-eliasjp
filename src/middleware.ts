@@ -4,7 +4,7 @@ import { client } from "./database";
 
 const movieContent = ["name", "description", "duration", "price"]
 
-function throwError (error: any){
+export function throwError (error: any){
     throw error
 }
 
@@ -70,7 +70,7 @@ export function checkWrongPropertyContent (request: Request, response: Response,
 
 export function checkNullContent (request: Request, response: Response, next: NextFunction): Response | void{
     try {
-        Object.values(request.body).forEach(value => !value && throwError({ message: `Properties cannot be empty.` }))
+        Object.values(request.body).forEach(value => value !== "description" && !value && throwError({ message: `Properties cannot be empty.` }))
         return next()
     }
     catch (err){
@@ -93,5 +93,17 @@ export function ErrorMovieExists (request: Request, response: Response, next: Ne
     }
     catch (err){
         return response.status(409).json(err)
+    }
+}
+
+export function testeMiddleware (request: Request, response: Response, next: NextFunction): Response | void{
+
+    try {
+        console.log(Array.isArray(request.body))
+        typeof request.body === "object" && Array.isArray(request.body) && request.body !== null && throwError("Request is not an object.")
+        Object.keys(request.body).length === 0 ? throwError({ message: "Request body is empty" }) : next()
+    }
+    catch (err){
+        return response.json(err)
     }
 }

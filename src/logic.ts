@@ -1,38 +1,71 @@
 import { Request, Response } from "express";
-import { Query, QueryConfig } from "pg";
+import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "./database";
+import { throwError } from "./middleware"
 
 export async function readAllMovies (request: Request, response: Response){
-    let limit: number = Number(request.query.limit) >= 1 && Number(request.query.limit) <= 5 ? Number(request.query.limit) : 5
-    let offset: number = Number(request.query.page) > 1 ? limit * (Number(request.query.page) - 1) : 0
+    let perPage: number = Number(request.query.perPage) >= 1 && Number(request.query.perPage) <= 5 ? Number(request.query.perPage) : 5
+    let offset: number = Number(request.query.page) > 1 ? perPage * (Number(request.query.page) - 1) : 0
     const sort= !request.query.sort ? "id" : request.query.sort === "price" || "duration" ? request.query.sort : "id"
     const orderType = !request.query.order ? "ASC" : request.query.order === "ASC" || "DESC" ? request.query.order : "ASC"
 
-    const queryString: string = `
+    const queryString: string = format(`
         SELECT
             *
         FROM
-            movies_table
+            movies_table mt
         ORDER BY
-            ${sort} ${orderType}
+            %I %s
         OFFSET
             $1
         LIMIT
             $2
-    `
+    `,
+        sort,
+        orderType
+    )
 
     const queryConfig: QueryConfig = {
         text: queryString,
-        values: [offset, limit]
+        values: [offset, perPage]
     }
 
     const queryResult = await client.query(queryConfig)
+    let urlPreviousPage = "movies?"
+    let urlNextPage = "movies?"
 
-    return response.status(201).json(queryResult.rows)
+    Object.keys(request.query).forEach((key: string, index: number, thisArray) => {
+        if (key === "page"){
+            urlNextPage += Number(request.query.page) >= 1 ? `page=${Number(request.query[key]) + 1}` : `page=2`
+            urlPreviousPage += `page=${Number(request.query[key]) - 1}`
+        }
+        else{
+            urlNextPage += `${key}=${request.query[key]}`
+            urlPreviousPage += `${key}=${request.query[key]}`
+        }
+
+        if (index < thisArray.length - 1){
+            urlNextPage += "&"
+            urlPreviousPage += "&"
+        }
+    })
+
+    const detailedReturn = {
+        previusPage: Number(request.query.page) >= 1 ? `http://localhost:3333/${urlPreviousPage}` : null,
+        nextPage: queryResult.rowCount ? `http://localhost:3333/${urlNextPage}` : null,
+        count: queryResult.rowCount,
+        data: queryResult.rows
+    }
+
+    return response.status(201).json(detailedReturn)
 }
 
 export async function createMovie (request: Request, response: Response){
+    if (!request.body.description){
+        request.body.description = ""
+    }
+
     const formatString: string = format(`
         INSERT INTO
             movies_table (%I)
@@ -72,6 +105,17 @@ export async function deleteMovieById (request: Request, response: Response): Pr
 }
 
 export async function updateMovieById (request: Request, response: Response): Promise<Response>{
+    try {
+        const verifyKeys = Object.keys(request.body)
+
+        verifyKeys.includes("name") && request.body.name === "" || typeof request.body.name === "number" && throwError({ message: "Property incorrect."})
+        verifyKeys.includes("duration") && typeof request.body.duration !== "number" ? throwError({ message: "Property incorrect."}) : request.body.duration <= 0 && throwError({ message: "Property incorrect."})
+        verifyKeys.includes("price") && typeof request.body.price !== "number" ? throwError({ message: "Property incorrect."}) : request.body.price <= 0 && throwError({ message: "Property incorrect."})
+    }
+    catch (err){
+        return response.status(400).json(err)
+    }
+
     const queryString: string = format(`
         UPDATE movies_table
         SET
@@ -88,10 +132,6 @@ export async function updateMovieById (request: Request, response: Response): Pr
     const queryConfig: QueryConfig = {
         text: queryString,
         values: [request.params.id]
-    }
-
-    if (request.body.name.toLowerCase() === request.body.name.toLowerCase()){
-        return response.status(409).json({ message: "Another movie has the same name" })
     }
 
     const queryResponse = await client.query(queryConfig)
