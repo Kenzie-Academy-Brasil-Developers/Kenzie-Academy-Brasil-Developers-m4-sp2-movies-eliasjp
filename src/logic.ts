@@ -105,17 +105,6 @@ export async function deleteMovieById (request: Request, response: Response): Pr
 }
 
 export async function updateMovieById (request: Request, response: Response): Promise<Response>{
-    try {
-        const verifyKeys = Object.keys(request.body)
-
-        verifyKeys.includes("name") && request.body.name === "" || typeof request.body.name === "number" && throwError({ message: "Property incorrect."})
-        verifyKeys.includes("duration") && typeof request.body.duration !== "number" ? throwError({ message: "Property incorrect."}) : request.body.duration <= 0 && throwError({ message: "Property incorrect."})
-        verifyKeys.includes("price") && typeof request.body.price !== "number" ? throwError({ message: "Property incorrect."}) : request.body.price <= 0 && throwError({ message: "Property incorrect."})
-    }
-    catch (err){
-        return response.status(400).json(err)
-    }
-
     const queryString: string = format(`
         UPDATE movies_table
         SET

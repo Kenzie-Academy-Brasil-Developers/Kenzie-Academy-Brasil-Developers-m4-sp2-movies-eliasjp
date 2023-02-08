@@ -68,6 +68,19 @@ export function checkWrongPropertyContent (request: Request, response: Response,
     }
 }
 
+export function doesAllPropertiesExists (request: Request, response: Response, next: NextFunction): Response | void{
+    const moviePostContent = ["name", "duration", "price"]
+    try {
+        moviePostContent.forEach(content => {
+            !Object.keys(request.body).includes(content) && throwError({ message: content }) 
+        })
+        next ()
+    }
+    catch (err){
+        return response.status(400).json(err)
+    }
+}
+
 export function checkNullContent (request: Request, response: Response, next: NextFunction): Response | void{
     try {
         Object.values(request.body).forEach(value => value !== "description" && !value && throwError({ message: `Properties cannot be empty.` }))
@@ -97,13 +110,25 @@ export function ErrorMovieExists (request: Request, response: Response, next: Ne
 }
 
 export function testeMiddleware (request: Request, response: Response, next: NextFunction): Response | void{
-
     try {
-        console.log(Array.isArray(request.body))
         typeof request.body === "object" && Array.isArray(request.body) && request.body !== null && throwError("Request is not an object.")
         Object.keys(request.body).length === 0 ? throwError({ message: "Request body is empty" }) : next()
     }
     catch (err){
         return response.json(err)
+    }
+}
+
+export function verifyContentType (request: Request, response: Response, next: NextFunction): Response | void{
+    const verifyKeys = Object.keys(request.body)
+    try {
+        verifyKeys.includes("name") && request.body.name === "" || typeof request.body.name === "number" && throwError({ message: "Property incorrect."})
+        verifyKeys.includes("duration") && typeof request.body.duration !== "number" ? throwError({ message: "Property incorrect."}) : request.body.duration <= 0 && throwError({ message: "Property incorrect."})
+        verifyKeys.includes("price") && typeof request.body.price !== "number" ? throwError({ message: "Property incorrect."}) : request.body.price <= 0 && throwError({ message: "Property incorrect."})
+
+        return next()
+    }
+    catch (err){
+        return response.status(400).json(err)
     }
 }
