@@ -72,7 +72,7 @@ export function doesAllPropertiesExists (request: Request, response: Response, n
     const moviePostContent = ["name", "duration", "price"]
     try {
         moviePostContent.forEach(content => {
-            !Object.keys(request.body).includes(content) && throwError({ message: content }) 
+            !Object.keys(request.body).includes(content) && throwError({ message: `Property '${content}' is missing.` }) 
         })
         next ()
     }
@@ -109,7 +109,7 @@ export function ErrorMovieExists (request: Request, response: Response, next: Ne
     }
 }
 
-export function testeMiddleware (request: Request, response: Response, next: NextFunction): Response | void{
+export function bodyIsObject (request: Request, response: Response, next: NextFunction): Response | void{
     try {
         typeof request.body === "object" && Array.isArray(request.body) && request.body !== null && throwError("Request is not an object.")
         Object.keys(request.body).length === 0 ? throwError({ message: "Request body is empty" }) : next()
