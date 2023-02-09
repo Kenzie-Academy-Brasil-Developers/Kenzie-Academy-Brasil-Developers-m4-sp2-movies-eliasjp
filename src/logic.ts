@@ -14,7 +14,7 @@ export async function readAllMovies (request: Request, response: Response){
         SELECT
             *
         FROM
-            movies_table mt
+            movies
         ORDER BY
             %I %s
         OFFSET
@@ -68,7 +68,7 @@ export async function createMovie (request: Request, response: Response){
 
     const formatString: string = format(`
         INSERT INTO
-            movies_table (%I)
+            movies (%I)
         VALUES 
             (%L)
         RETURNING
@@ -90,7 +90,7 @@ export function readMovieById (request: Request, response: Response): Response{
 export async function deleteMovieById (request: Request, response: Response): Promise<Response>{
     const queryString: string = `
         DELETE FROM
-            movies_table
+            movies
         WHERE
             id = $1
     `
@@ -106,7 +106,7 @@ export async function deleteMovieById (request: Request, response: Response): Pr
 
 export async function updateMovieById (request: Request, response: Response): Promise<Response>{
     const queryString: string = format(`
-        UPDATE movies_table
+        UPDATE movies
         SET
             (%I) = ROW (%L)
         WHERE

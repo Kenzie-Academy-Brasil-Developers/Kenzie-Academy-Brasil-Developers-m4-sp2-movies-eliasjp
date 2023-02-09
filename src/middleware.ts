@@ -13,7 +13,7 @@ export async function checkMovieByName (request: Request, response: Response, ne
         SELECT 
             *
         FROM
-            movies_table
+            movies
         WHERE
             LOWER(name) = $1
     `
@@ -37,7 +37,7 @@ export async function checkMovieById (request: Request, response: Response, next
         SELECT
             *
         FROM
-            movies_table
+            movies
         WHERE
             id = $1
     `
